@@ -22,7 +22,9 @@ Route::prefix('v1')->group(function () {
         ]);
     });
 
-    // GET, POST, GET/{id}, PUT/{id}, PATCH/{id}, DELETE/{id}
+    // TEMPORAL para pruebas de integración: las consultas GET no requieren Bearer.
+    // Estos apiResource no tienen auth:sanctum; sus operaciones de escritura también quedan públicas.
+    // Reinstalar la protección antes de exponer la API fuera del entorno de pruebas.
     Route::apiResource('categorias', CategoriaReporteController::class)->parameters(['categorias' => 'id']);
     Route::apiResource('reportes', ReporteController::class)->parameters(['reportes' => 'id']);
     Route::apiResource('evidencias', EvidenciaController::class)->parameters(['evidencias' => 'id']);

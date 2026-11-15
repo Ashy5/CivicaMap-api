@@ -24,6 +24,13 @@ php artisan storage:link      # IMPORTANTE: habilita las URLs públicas de las i
 php artisan serve             # http://localhost:8000
 ```
 
+Para permitir que el frontend Vite consuma la API desde otro origen, configura
+`FRONTEND_URL` en el `.env` del backend (por defecto permite
+`http://localhost:5173` y `http://127.0.0.1:5173`). Puede ser una lista de
+orígenes separados por comas. En producción, indica el origen público del
+frontend. La autenticación usa tokens Bearer, por lo que CORS no requiere
+cookies ni credenciales compartidas.
+
 Verificación: `GET http://localhost:8000/api/v1/prueba`
 
 ## Configuración de imágenes
