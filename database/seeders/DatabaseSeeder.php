@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
 {
     /**
      * Datos de ejemplo para probar la API desde Postman.
+     * Administrador de prueba: admin@civicamap.test (contraseña: password123)
      * Clientes de prueba (contraseña: password123):
      *   clienteA@civicamap.test  y  clienteB@civicamap.test
      */
@@ -22,10 +23,22 @@ class DatabaseSeeder extends Seeder
             ['nombre' => 'Cliente'],
             ['descripcion' => 'Usuario final del sistema']
         );
-        Rol::firstOrCreate(
+        $rolAdmin = Rol::firstOrCreate(
             ['nombre' => 'Administrador'],
             ['descripcion' => 'Administrador del sistema']
         );
+
+        // Administrador de prueba para el Área Administrativa (Actividad 5.2)
+        $admin = Usuario::firstOrCreate(
+            ['correo' => 'admin@civicamap.test'],
+            [
+                'nombre'         => 'Administrador CivicaMap',
+                'password'       => 'password123', // el cast "hashed" lo cifra
+                'fecha_registro' => now(),
+                'estado'         => true,
+            ]
+        );
+        $admin->roles()->syncWithoutDetaching([$rolAdmin->id_rol]);
 
         $clientes = [];
         foreach (['A', 'B'] as $letra) {

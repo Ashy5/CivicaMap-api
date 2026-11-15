@@ -39,6 +39,11 @@ class Usuario extends Authenticatable
         return $this->roles()->where('nombre', 'Cliente')->exists();
     }
 
+    public function esAdministrador(): bool
+    {
+        return $this->roles()->where('nombre', 'Administrador')->exists();
+    }
+
     public function roles()
     {
         return $this->belongsToMany(

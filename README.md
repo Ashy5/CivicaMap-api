@@ -3,7 +3,7 @@
 API RESTful de CivicaMap. Este proyecto es **solo backend**: no contiene vistas, rutas web ni assets de front-end.
 El front-end vive en un proyecto separado y consume esta API mediante HTTP/JSON.
 
-Recursos implementados: la API administrativa (categorias, reportes, evidencias) es de la actividad 4.2 y sigue sin autenticación; el área del cliente (`/client`) usa Sanctum.
+Recursos implementados: la API administrativa (categorias, reportes, evidencias) vive bajo `/api/v1/admin` y desde la **Actividad 5.2 está protegida con `auth:sanctum`**; el área del cliente (`/client`) también usa Sanctum.
 
 | Recurso    | Descripción                                        |
 |------------|----------------------------------------------------|
@@ -42,27 +42,57 @@ Verificación: `GET http://localhost:8000/api/v1/prueba`
 - Verifique que `upload_max_filesize` y `post_max_size` de `php.ini` sean ≥ 2 MB. Si una solicitud excede `post_max_size`, la API responde 413 en JSON.
 - La carga se hace con `multipart/form-data`.
 
-## Endpoints (prefijo `/api/v1`)
+## Área administrativa (Sanctum) – `/api/v1/admin`  *(Actividad 5.2)*
 
-| Método        | Endpoint                    | Operación                                  |
-|---------------|-----------------------------|--------------------------------------------|
-| GET           | /prueba                     | Comprobar que la API funciona              |
-| GET           | /categorias, /reportes, /evidencias | Consultar colección                |
-| GET           | /{recurso}/{id}             | Consultar un registro                      |
-| POST          | /{recurso}                  | Crear (evidencias: multipart con `archivo`) |
-| PUT           | /{recurso}/{id}             | Reemplazar (todos los campos obligatorios) |
-| PATCH         | /{recurso}/{id}             | Actualización parcial                      |
-| DELETE        | /{recurso}/{id}             | Eliminar (en evidencias también borra el archivo) |
-| POST          | /evidencias/{id}/imagen     | Reemplazar la imagen (multipart, campo `archivo`) |
+Todas las rutas, salvo el login, están dentro del grupo `auth:sanctum` + `abilities:admin` (ver `routes/api.php`).
+Sin token válido responden **401**; con un token válido que no es de administrador (p. ej. uno de cliente) responden **403**.
+
+| Método | Endpoint                         | Acceso | Descripción |
+|--------|----------------------------------|--------|-------------|
+| POST   | /admin/login                     | Público (throttle 10/min) | Credenciales `correo` + `password`; devuelve `token`, `token_type` y `usuario` (con `roles`). Solo cuentas activas con rol *Administrador* |
+| POST   | /admin/logout                    | Token admin | Revoca (borra de `personal_access_tokens`) el token usado en la petición |
+| GET    | /admin/perfil                    | Token admin | Perfil del administrador autenticado |
+| GET/POST | /admin/categorias, /admin/reportes, /admin/evidencias | Token admin | Consultar colección / crear (evidencias: multipart con `archivo`) |
+| GET/PUT/PATCH/DELETE | /admin/{recurso}/{id} | Token admin | Consultar / reemplazar / actualizar parcialmente / eliminar |
+| POST   | /admin/evidencias/{id}/imagen    | Token admin | Reemplazar la imagen (multipart, campo `archivo`) |
+
+Encabezado requerido en las rutas protegidas: `Authorization: Bearer <token>` (más `Accept: application/json`).
+Administrador de prueba del seeder: `admin@civicamap.test` / `password123`.
 
 > **PUT/PATCH con archivos:** PHP no procesa `multipart/form-data` en PUT/PATCH. Para cambiar la imagen use
-> `POST /evidencias/{id}/imagen`.
+> `POST /admin/evidencias/{id}/imagen`.
+
+### Rutas históricas (sin prefijo `admin`) que se conservan para el sitio público
+
+| Método | Endpoint                        | Acceso  | Motivo |
+|--------|---------------------------------|---------|--------|
+| GET    | /categorias, /reportes, /{recurso}/{id} | Público | Mapa/listado ciudadano (**solo lectura**) |
+| POST   | /reportes, /evidencias          | Token (cualquier usuario autenticado) | Un ciudadano registra su reporte y evidencia |
+
+Cualquier otra operación de escritura en esas rutas (PUT/PATCH/DELETE) ya no existe: responde 405.
 
 ### Ejemplos de campos
 
 - **categorias:** `nombre` (obligatorio, máx. 80), `descripcion` (opcional, máx. 255), `estado` (boolean).
 - **reportes:** `id_usuario`, `id_categoria`, `descripcion`, `latitud_aprox` y `longitud_aprox` (opcionales), `fecha_reporte`, `estado`, `anonimizado`.
 - **evidencias:** `id_reporte`, `archivo` (imagen).
+
+### Pruebas rápidas con curl
+
+```bash
+# 1) Sin token -> 401
+curl -i -H "Accept: application/json" http://localhost:8000/api/v1/admin/reportes
+
+# 2) Login -> token
+curl -s -X POST http://localhost:8000/api/v1/admin/login -H "Accept: application/json" \
+     -H "Content-Type: application/json" -d '{"correo":"admin@civicamap.test","password":"password123"}'
+
+# 3) Con token -> 200
+curl -s -H "Accept: application/json" -H "Authorization: Bearer <TOKEN>" http://localhost:8000/api/v1/admin/reportes
+
+# 4) Logout (revoca el token) y reintento -> 401
+curl -s -X POST -H "Accept: application/json" -H "Authorization: Bearer <TOKEN>" http://localhost:8000/api/v1/admin/logout
+```
 
 ## Área del cliente (Sanctum) – `/api/v1/client`
 
@@ -96,8 +126,8 @@ Todas las respuestas (éxito y error) usan la misma estructura:
 |--------|-----|
 | 200 / 201 | Éxito / creado |
 | 400 | Identificador inválido o solicitud incorrecta |
-| 401 | Sin token, token inválido, expirado o credenciales incorrectas |
-| 403 | Intento de acceder a un registro de otro usuario (Policy/Gate) |
+| 401 | Sin token, token inválido, revocado o expirado, o credenciales incorrectas |
+| 403 | Registro de otro usuario (Policy/Gate), cuenta sin rol/desactivada o token sin la habilidad requerida (`admin`) |
 | 404 | Registro o ruta inexistente |
 | 405 | Método HTTP no permitido |
 | 413 | Archivo o solicitud demasiado grande |
@@ -113,4 +143,4 @@ Los errores que ocurren antes de llegar al controlador (ruta inexistente, métod
 php artisan test
 ```
 
-Para Postman: envíe siempre el encabezado `Accept: application/json` y no agregue tokens.
+Para Postman: envíe siempre el encabezado `Accept: application/json`. Las rutas `/admin/*` (salvo login) y `/client/*` privadas requieren `Authorization: Bearer <token>`.

@@ -8,6 +8,9 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\Exceptions\MissingAbilityException;
+use Laravel\Sanctum\Http\Middleware\CheckAbilities;
+use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 // Proyecto solo API: no existen rutas web ni vistas. El front vive en otro proyecto.
@@ -18,7 +21,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Alias para restringir rutas según las habilidades (abilities) del token Sanctum
+        $middleware->alias([
+            'abilities' => CheckAbilities::class,
+            'ability'   => CheckForAnyAbility::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
 
@@ -67,6 +74,11 @@ return Application::configure(basePath: dirname(__DIR__))
                 // 403: conserva el mensaje de la Policy/Gate (Laravel convierte la
                 // AuthorizationException en un HttpException 403 antes de llegar aquí)
                 if ($status === 403) {
+                    // Token válido pero sin la habilidad requerida (p. ej. token de cliente en /admin)
+                    if ($e->getPrevious() instanceof MissingAbilityException) {
+                        return $respuesta('Este token no tiene permisos para acceder a esta área.', 403);
+                    }
+
                     $mensaje = $e->getMessage();
 
                     if ($mensaje === '' || $mensaje === 'This action is unauthorized.') {

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\AdminAuthController;
 use App\Http\Controllers\Api\V1\CategoriaReporteController;
 use App\Http\Controllers\Api\V1\Client\ClientAuthController;
 use App\Http\Controllers\Api\V1\Client\ClientCatalogoController;
@@ -22,15 +23,45 @@ Route::prefix('v1')->group(function () {
         ]);
     });
 
-    // TEMPORAL para pruebas de integración: las consultas GET no requieren Bearer.
-    // Estos apiResource no tienen auth:sanctum; sus operaciones de escritura también quedan públicas.
-    // Reinstalar la protección antes de exponer la API fuera del entorno de pruebas.
-    Route::apiResource('categorias', CategoriaReporteController::class)->parameters(['categorias' => 'id']);
-    Route::apiResource('reportes', ReporteController::class)->parameters(['reportes' => 'id']);
-    Route::apiResource('evidencias', EvidenciaController::class)->parameters(['evidencias' => 'id']);
+    // ------------------------------------------------------------------
+    // Lectura pública para el mapa ciudadano (solo GET; nunca escritura)
+    // ------------------------------------------------------------------
+    Route::apiResource('categorias', CategoriaReporteController::class)
+        ->parameters(['categorias' => 'id'])
+        ->only(['index', 'show']);
+    Route::apiResource('reportes', ReporteController::class)
+        ->parameters(['reportes' => 'id'])
+        ->only(['index', 'show']);
 
-    // Reemplazar la imagen de una evidencia (multipart/form-data)
-    Route::post('/evidencias/{id}/imagen', [EvidenciaController::class, 'reemplazarImagen']);
+    // Un usuario autenticado (cliente) puede registrar un reporte y su evidencia
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('reportes', [ReporteController::class, 'store']);
+        Route::post('evidencias', [EvidenciaController::class, 'store']);
+    });
+
+    // ------------------------------------------------------------------
+    // Área administrativa: /api/v1/admin/...
+    // Protección auth:sanctum REACTIVADA (Actividad 5.2): sin un token Bearer
+    // válido la API responde 401; con un token sin la habilidad "admin" responde 403.
+    // ------------------------------------------------------------------
+    Route::prefix('admin')->group(function () {
+
+        // Pública: aquí se obtiene el token
+        Route::post('login', [AdminAuthController::class, 'login'])->middleware('throttle:10,1');
+
+        // Privadas: requieren Bearer token de Sanctum con habilidad "admin"
+        Route::middleware(['auth:sanctum', 'abilities:admin'])->group(function () {
+            Route::post('logout', [AdminAuthController::class, 'logout']);
+            Route::get('perfil', [AdminAuthController::class, 'perfil']);
+
+            Route::apiResource('categorias', CategoriaReporteController::class)->parameters(['categorias' => 'id']);
+            Route::apiResource('reportes', ReporteController::class)->parameters(['reportes' => 'id']);
+            Route::apiResource('evidencias', EvidenciaController::class)->parameters(['evidencias' => 'id']);
+
+            // Reemplazar la imagen de una evidencia (multipart/form-data)
+            Route::post('evidencias/{id}/imagen', [EvidenciaController::class, 'reemplazarImagen']);
+        });
+    });
 
     // ------------------------------------------------------------------
     // Área del cliente: /api/v1/client/...
