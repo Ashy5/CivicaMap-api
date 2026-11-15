@@ -1,0 +1,62 @@
+<?php
+
+return [
+    'between' => [
+        'array'   => 'El campo :attribute debe tener entre :min y :max elementos.',
+        'file'    => 'El archivo :attribute debe pesar entre :min y :max kilobytes.',
+        'numeric' => 'El campo :attribute debe estar entre :min y :max.',
+        'string'  => 'El campo :attribute debe tener entre :min y :max caracteres.',
+    ],
+    'boolean'  => 'El campo :attribute debe ser verdadero o falso.',
+    'date'     => 'El campo :attribute no es una fecha válida.',
+    'exists'   => 'El valor seleccionado en :attribute no existe.',
+    'file'     => 'El campo :attribute debe ser un archivo.',
+    'image'    => 'El archivo :attribute debe ser una imagen.',
+    'in'       => 'El valor seleccionado en :attribute no es válido.',
+    'integer'  => 'El campo :attribute debe ser un número entero.',
+    'max' => [
+        'array'   => 'El campo :attribute no debe tener más de :max elementos.',
+        'file'    => 'El archivo :attribute no debe pesar más de :max kilobytes.',
+        'numeric' => 'El campo :attribute no debe ser mayor a :max.',
+        'string'  => 'El campo :attribute no debe tener más de :max caracteres.',
+    ],
+    'mimes'    => 'El archivo :attribute debe ser de tipo: :values.',
+    'mimetypes' => 'El archivo :attribute debe ser de tipo: :values.',
+    'min' => [
+        'array'   => 'El campo :attribute debe tener al menos :min elementos.',
+        'file'    => 'El archivo :attribute debe pesar al menos :min kilobytes.',
+        'numeric' => 'El campo :attribute debe ser al menos :min.',
+        'string'  => 'El campo :attribute debe tener al menos :min caracteres.',
+    ],
+    'numeric'  => 'El campo :attribute debe ser un número.',
+    'required' => 'El campo :attribute es obligatorio.',
+    'string'   => 'El campo :attribute debe ser texto.',
+    'unique'   => 'El valor de :attribute ya está registrado.',
+    'uploaded' => 'No se pudo subir el archivo :attribute. Verifique que no exceda el tamaño permitido.',
+
+    'email'    => 'El campo :attribute debe ser un correo electrónico válido.',
+    'array'    => 'El campo :attribute debe ser una lista.',
+    'distinct' => 'El campo :attribute tiene un valor duplicado.',
+
+    'custom' => [],
+
+    'attributes' => [
+        'id_usuario'     => 'usuario',
+        'id_categoria'   => 'categoría',
+        'id_reporte'     => 'reporte',
+        'nombre'         => 'nombre',
+        'descripcion'    => 'descripción',
+        'estado'         => 'estado',
+        'latitud_aprox'  => 'latitud',
+        'longitud_aprox' => 'longitud',
+        'fecha_reporte'  => 'fecha del reporte',
+        'anonimizado'    => 'anonimizado',
+        'archivo'        => 'archivo',
+        'correo'         => 'correo electrónico',
+        'password'       => 'contraseña',
+        'observaciones'  => 'observaciones',
+        'servicios'      => 'servicios',
+        'servicios.*.id_servicio' => 'servicio',
+        'servicios.*.cantidad'    => 'cantidad',
+    ],
+];
